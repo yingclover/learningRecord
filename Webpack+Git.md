@@ -122,6 +122,40 @@ output出口，告诉webpack在哪里输出它打包好的代码以及如何命�
 浏览器在用户访问页面的时候，为了加快加载速度会对用户访问的静态资源进行存储，但是每一次代码升级或更新都需要浏览器下载新的代码，最简单方便的方式就是引入新的文件名称
 webpack中可以在output中指定chunkhash，并且分离经常更新的代码和框架代码。通过NameModulesPlugin或HashedModuleIdsPlugin使再次打包文件名不变
 
+#### 13.提取公共代码
+
+```javascript
+module.exports = {
+    optimization: {
+        splitChunks: {
+            common: {
+                // 抽离公共代码
+                chunks: 'initial',
+                name: 'common', // 打包后的文件名
+                minChunks: 2, // 最小引用2次
+                minSize: 0 // 超出0字节就生成一个新包
+            },
+            styles: {
+                // 抽离公用代码
+                name: 'styles',
+                test: /\.css$/,
+                chunks: 'all',
+                minChunks: 2,
+                enforce: true
+            },
+            vender: {
+                // 抽离第三方插件
+                test: /node_modules/,
+                chunks: 'initial',
+                name: 'vendor', // 打包后的文件名
+                priority: 10 // 设置优先级，防止与自定义公共代码提取时被覆盖，不进行打包
+            }
+        }
+    }
+}
+
+```
+
 ## Git
 
 #### 1.Git和SVN的区别
