@@ -42,7 +42,7 @@ Child.prototype.constructor = Child;
 执行对给定对象的浅复制
 
 ```javascript
-var person1=Object.create(person);
+    var person1=Object.create(Person);
 //Object.create(obj)等价于下面
 function object(obj){
     function F(){}
