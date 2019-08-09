@@ -362,59 +362,130 @@ container.onclick=function(){
 
 #### 数组去重
 
+##### 1.双层循环
+
+最外层循环 array，里面循环 res，如果 array[i] 的值跟 res[j] 的值相等，就跳出循环，如果都不等于，说明元素是唯一的，这时候 j 的值就会等于 res 的长度，根据这个特点进行判断，将值添加进 res。
+
+```javascript
+var arr=[1,1,"1","1"];
+function unique(arr) {
+    var res=[];
+    for(var i=0,len1=arr.length;i<len1;i++){
+        for(var j=0,len2=res.length;j<len2;j++){
+            if(arr[i]===res[j])
+                break;
+        }
+        if(j==len2)
+            res.push(arr[i]);
+    }
+    return res;
+}
+
+var result=unique(arr)
+console.log(result)//[1,"1"]
+```
+
+##### 2.indexOf
+
+可以用indexOf简化内层循环
+
+```javascript
+function unique(arr) {
+    var res=[];
+    for(var i=0,len=arr.length;i<len;i++){
+        if(res.indexOf(arr[i])===-1)
+            res.push(arr[i])
+    }
+    return res;
+}
+```
+
+##### 3.排序后去重
+
+```javascript
+function unique(arr) {
+    var res=[];
+    var sortArr=arr.concat().sort();
+    for(var i=0,len=sortArr.length;i<len;i++){
+        //第一个或者相邻两个值不相等
+        if(!i||seen!==sortArr[i])
+            res.push(sortArr[i])
+        seen=sortArr[i]
+    }
+    return res;
+}
+```
+
+##### 4.filter
+
+```javascript
+//简化外层循环
+function unique(arr) {
+    var res=arr.filter(function (v,i,arr) {
+        return arr.indexOf(v)===i;
+    })
+    return res;
+}
+
+function unique(arr) {
+    var res=arr.concat().sort().filter(function (v,i,arr) {
+        return !i||v!==arr[i-1]
+    })
+    return res;
+}
+```
+
+##### 5.Object键值对
+
+```javascript
+//把数组的值存成 Object 的 key 值，比如 Object[value1] = true，在判断另一个值的时候，如果 Object[value2]存在的话，就说明该值是重复的。
+function unique(arr) {
+    var obj={};
+    return arr.filter(function (v,i,arr) {
+        return obj.hasOwnProperty(v)?false:(obj[v]=true)
+    })
+}
+//我们可以发现，是有问题的，因为 1 和 '1' 是不同的，但是这种方法会判断为同一个值，这是因为对象的键值只能是字符串，所以我们可以使用 typeof item + item 拼成字符串作为 key 值来避免这个问题：
+function unique(arr) {
+    var obj={};
+    return arr.filter(function (v,i,arr) {
+        return obj.hasOwnProperty(typeof v+v)?false:(obj[typeof v+v]=true)
+    })
+}
+//然而，即便如此，我们依然无法正确区分出两个对象，比如 {value: 1} 和 {value: 2}，因为 typeof item + item 的结果都会是 object[object Object]，不过我们可以使用 JSON.stringify 将对象序列化：
+function unique(arr) {
+    var obj={};
+    return arr.filter(function (v,i,arr) {
+        return obj.hasOwnProperty(typeof v+JSON.stringify(v))?false:(obj[typeof v+JSON.stringify(v)]=true)
+    })
+}
+```
+
+##### 6.ES6
+
 ```javascript
 //ES6方法
 function unique(arr) {
     return [...new Set(arr)];//[a,b,c]
     //return Array.from(new Set(arr));//[a,b,c]
 }
-//indexOf()方法
-function unique(arr) {
-    let i=0;
-    let len=arr.length;
-    let newArr=[];
-    for(;i<len;i++){
-        if (newArr.indexOf(arr[i])<0)
-            newArr.push(arr[i])
-    }
-    return newArr;
-}
-function unique(arr){
-    return Array.prototype.filter.call(arr,function(value, index){
-        return arr.indexOf(value) === index;
-    });
-}
-法一：indexOf循环去重
-法二：ES6 Set去重；Array.from(new Set(array))
-法三：Object 键值对去重；把数组的值存成 Object 的 key 值，比如 Object[value1] = true，在判断另一个值的时候，如果 Object[value2]存在的话，就说明该值是重复的。
-function unique(arr) {  
-   let hashTable = {};
-   let newArr = [];
-   for(let i=0,l=arr.length;i<l;i++) {
-     if(!hashTable[arr[i]]) {
-       hashTable[arr[i]] = true;
-       newArr.push(arr[i]);
-     }
-   }
-   return newArr;
- }
-//应用：输入一个字符串，每次从中间去掉一个字符，得到一个结果数组，求剩下的数组中不重复的长度
-var str='abba';
-var arr=Array.prototype.slice.call(str,0,str.length);//对字符串应用数组方法该这样用
-var arr2=str.split('');//arr和arr2结果都是数组
-var result=[];
-for(let i=0;i<str.length;i++){
-    let temp=str.split('');//这里不能用arr2，因为下面splice改变了temp也会改变arr2
-    temp.splice(i,1);
-    result.push(temp.join(''))
-}
-console.log([...new Set(result)].length);
-//arr和arr2指向同一块地址，改变2也会影响原来的
-var arr=[1,2];
-var arr2=arr;
-arr2.push(3);
-console.log(arr)
+//还可以简化如下
+var unique=(a)=>[...new Set(a)]
 ```
+
+##### 比较
+
+对于这样一个数组`var array = [1, 1, '1', '1', null, null, undefined, undefined, new String('1'), new String('1'), /a/, /a/, NaN, NaN];`ps:正则 表达式也是对象
+
+| 方法               | 结果                                                         | 说明                              |
+| ------------------ | ------------------------------------------------------------ | --------------------------------- |
+| for循环            | [1, "1", null, undefined, String, String, /a/, /a/, NaN, NaN] | 对象和 NaN 不去重                 |
+| indexOf            | [1, "1", null, undefined, String, String, /a/, /a/, NaN, NaN] | 对象和 NaN 不去重                 |
+| sort               | [/a/, /a/, "1", 1, String, 1, String, NaN, NaN, null, undefined] | 对象和 NaN 不去重 数字 1 也不去重 |
+| filter + indexOf   | [1, "1", null, undefined, String, String, /a/, /a/]          | 对象不去重 NaN 会被忽略掉         |
+| filter + sort      | [/a/, /a/, "1", 1, String, 1, String, NaN, NaN, null, undefined] | 对象和 NaN 不去重 数字 1 不去重   |
+| 优化后的键值对方法 | [1, "1", null, undefined, String, /a/, NaN]                  | 全部去重                          |
+| Set                | [1, "1", null, undefined, String, String, /a/, /a/, NaN]     | 对象不去重 NaN 去重               |
 
 #### call和apply，bind
 
@@ -662,7 +733,7 @@ var person1 = new Person('kevin');
 
 #### 2.1 构造函数模式优化
 
-```
+```javascript
 function Person(name) {
     this.name = name;
     this.getName = getName;
@@ -899,7 +970,7 @@ console.log(colors2);
 console.log(colors2.toPipedString()); // red2|blue2|green2
 ```
 
-你会发现，其实所谓的寄生构造函数模式就是比工厂模式在创建对象的时候，多使用了一个new，实际上两者的结果是一样的。
+你会发现，其实所谓的**寄生构造函数模式就是比工厂模式在创建对象的时候，多使用了一个new，实际上两者的结果是一样的。**
 
 但是作者可能是希望能像使用普通 Array 一样使用 SpecialArray，虽然把 SpecialArray 当成函数也一样能用，但是这并不是作者的本意，也变得不优雅。
 
