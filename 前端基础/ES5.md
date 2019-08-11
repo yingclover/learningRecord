@@ -206,7 +206,9 @@ int funcB(int n)
 
 # JS基础
 
-#### 数据类型
+## 数据类型与判断方法
+
+#### 1.数据类型
 
 5种基本数据类型和1种复杂数据类型，可以通过`typeof`操作符判断
 
@@ -234,9 +236,9 @@ parseFloat():第一个小数点不省略
 
 Object：实质上是一组数据和功能的集合，可以通过执行new操作符后跟要创建的对象类型的名称来创建。
 
-#### 判断类型
+#### 2.判断类型
 
-##### typeof
+##### 1. typeof
 
 typeof是javascript原生提供的判断数据类型的运算符，它会返回一个表示参数的数据类型的字符串.
 
@@ -254,7 +256,7 @@ typeof是javascript原生提供的判断数据类型的运算符，它会返回�
 
 typeof无法判断null和Array对象。
 
-##### instanceof
+##### 2.instanceof
 
 instanceof运算符可以用来判断某个构造函数的prototype属性所指向的對象是否存在于另外一个要检测对象的原型链上。在使用的时候语法如下：
 
@@ -274,7 +276,7 @@ console.log(b instanceof Array);//false
 
 instanceof可以区分数组和对象
 
-##### constructor
+##### 3.constructor
 
 实例化的数组有一个constructor属性，指向生成这个数组的方法
 
@@ -285,7 +287,7 @@ console.log(a.constructor);//function Array(){ [native code] }
 
 但是如果改写constructor属性就无法判断了。
 
-##### Object的toString
+##### 4.Object的toString
 
 每一个继承自Object的对象都拥有toString的方法。如果一个对象的toString方法没有被重写过的话，那么toString方法将会返回"[object *type*]"，其中的*type*代表的是对象的类型，根据type的值，我们就可以判断这个疑似数组的对象到底是不是数组了。
 
@@ -300,7 +302,12 @@ Object.prototype.toString.call(c);//"[object String]"
 
 如果直接调用toString方法，直接返回字符串内容。
 
-##### Array对象的isArray
+在JS中，可以通过`Object.prototype.toString`方法，判断某个对象之属于哪种内置类型。
+分为`null`、`string`、`boolean`、`number`、`undefined`、`array`、`function`、`object`、`date`、`math`。**几乎可以识别所有类型**。
+
+##### 5.Array对象的isArray（jQuery方法）
+
+Array.isArray(a)
 
 除非重写该方法本身，否则不影响判断。
 
@@ -358,11 +365,9 @@ container.onclick=function(){
 //在1s之内点击container，hh不会输出，此时timer值还是1。
 ```
 
+## 数组去重
 
-
-#### 数组去重
-
-##### 1.双层循环
+### 1.双层循环
 
 最外层循环 array，里面循环 res，如果 array[i] 的值跟 res[j] 的值相等，就跳出循环，如果都不等于，说明元素是唯一的，这时候 j 的值就会等于 res 的长度，根据这个特点进行判断，将值添加进 res。
 
@@ -385,7 +390,7 @@ var result=unique(arr)
 console.log(result)//[1,"1"]
 ```
 
-##### 2.indexOf
+### 2.indexOf
 
 可以用indexOf简化内层循环
 
@@ -400,7 +405,7 @@ function unique(arr) {
 }
 ```
 
-##### 3.排序后去重
+### 3.排序后去重
 
 ```javascript
 function unique(arr) {
@@ -416,7 +421,7 @@ function unique(arr) {
 }
 ```
 
-##### 4.filter
+### 4.filter
 
 ```javascript
 //简化外层循环
@@ -435,7 +440,7 @@ function unique(arr) {
 }
 ```
 
-##### 5.Object键值对
+### 5.Object键值对
 
 ```javascript
 //把数组的值存成 Object 的 key 值，比如 Object[value1] = true，在判断另一个值的时候，如果 Object[value2]存在的话，就说明该值是重复的。
@@ -461,7 +466,7 @@ function unique(arr) {
 }
 ```
 
-##### 6.ES6
+### 6.ES6
 
 ```javascript
 //ES6方法
@@ -473,7 +478,7 @@ function unique(arr) {
 var unique=(a)=>[...new Set(a)]
 ```
 
-##### 比较
+### 比较
 
 对于这样一个数组`var array = [1, 1, '1', '1', null, null, undefined, undefined, new String('1'), new String('1'), /a/, /a/, NaN, NaN];`ps:正则 表达式也是对象
 
@@ -487,7 +492,7 @@ var unique=(a)=>[...new Set(a)]
 | 优化后的键值对方法 | [1, "1", null, undefined, String, /a/, NaN]                  | 全部去重                          |
 | Set                | [1, "1", null, undefined, String, String, /a/, /a/, NaN]     | 对象不去重 NaN 去重               |
 
-#### call和apply，bind
+## call和apply，bind
 
 apply：调用一个对象的一个方法，用另一个对象替换当前对象。例如：B.apply(A, arguments);即A对象应用B对象的方法。
 
@@ -495,13 +500,13 @@ call：调用一个对象的一个方法，用另一个对象替换当前对象�
 
 bind除了返回是函数以外，它的参数和call一样。返回的函数不会马上执行
 
-#### 原生js实现call,apply,bind,new
+### 原生js实现
 
-##### arguments
+arguments
 
 类数组对象，拥有一个length属性和落干索引属性的对象，可以读写，获取长度，可遍历，有callee属性可以调用自身。不可以使用Array的方法。
 
-##### call
+### 1.call
 
 ```javascript
 Function.prototype.call2 = function (context) {
@@ -522,7 +527,7 @@ Function.prototype.call2 = function (context) {
 }
 ```
 
-##### apply
+### 2.apply
 
 ```javascript
 Function.prototype.apply2 = function (context, arr) {
@@ -555,7 +560,7 @@ Function.prototype.apply2 = function (context, arr) {
     }
 ```
 
-##### bind
+### 3.bind
 
 bind是Function原型链上的一个属性，他修改了this指向，合并参数传递给原函数，返回值是一个新函数，这个函数还以作为构造函数调用，this会指向new的新对象
 
@@ -581,7 +586,7 @@ Function.prototype.bind2 = function (context) {
 }
 ```
 
-##### new
+### 4.new
 
 new的person实例
 
@@ -622,7 +627,7 @@ function objectFactory() {
 var obj=Object.create(Constructor.prototype);
 ```
 
-#### 什么是闭包？
+## 闭包
 
 > 简单讲，闭包就是指有权访问另一个函数作用域中变量的函数，由函数以及创建该函数的环境构成，理解闭包的关键在于，外部函数调用之后其变量对象本应该被销毁，但闭包的存在使我们任然可以访问外部函数的变量对象，这是闭包的重要概念。
 >
@@ -1199,65 +1204,187 @@ class Cat extends Animal{
 }
 ```
 
-#### 浅复制与深复制
+## 深浅拷贝
 
-- 浅复制：即仅仅是指向被复制对象的内存地址，如果原地址中对象被改变了，那么浅复制出来的对象也会相应改变。
+### 1.浅拷贝
 
-  ```javascript
-  //此递归方法不包含数组对象
-  var obj = { a:1, arr: [2,3] };
-  var shallowObj = shallowCopy(obj);
-  
-  function shallowCopy(src) {
-    var newobj = {};
-    for (var prop in src) {
-      if (src.hasOwnProperty(prop)) {
-        newobj[prop] = src[prop];
-      }
+**即复制引用的拷贝方法，如果原地址中对象被改变了，那么浅复制出来的对象也会相应改变。**
+
+#### 数组的浅拷贝
+
+如果是数组，我们可以利用数组的一些方法比如：slice、concat 返回一个新数组的特性来实现拷贝。
+
+比如：
+
+```javascript
+var arr = ['old', 1, true, null, undefined];
+
+var new_arr = arr.concat();
+
+new_arr[0] = 'new';
+
+console.log(arr) // ["old", 1, true, null, undefined]
+console.log(new_arr) // ["new", 1, true, null, undefined]
+```
+
+用 slice 可以这样做：
+
+```javascript
+var new_arr = arr.slice();
+```
+
+但是如果数组嵌套了对象或者数组的话，比如：
+
+```javascript
+var arr = [{old: 'old'}, ['old']];
+
+var new_arr = arr.concat();
+
+arr[0].old = 'new';
+arr[1][0] = 'new';
+
+console.log(arr) // [{old: 'new'}, ['new']]
+console.log(new_arr) // [{old: 'new'}, ['new']]
+```
+
+我们会发现，无论是新数组还是旧数组都发生了变化，也就是说使用 concat 方法，克隆的并不彻底。
+
+如果数组元素是基本类型，就会拷贝一份，互不影响，而如果是对象或者数组，就会只拷贝对象和数组的引用，这样我们无论在新旧数组进行了修改，两者都会发生变化。
+
+#### 浅拷贝的实现
+
+遍历对象，然后把属性和属性值都放在一个新的对象。
+
+```javascript
+var shallowCopy=function (obj) {
+    if(typeof obj!=='object')
+        return;
+    var newObj=obj instanceof Array?[]:{};
+    for(var key in obj){
+        if(obj.hasOwnProperty(key)){
+            newObj[key]=obj[key];
+        }
     }
-    return newobj;
-  }
-  ```
+    return newObj;
+}
+```
 
-  因为浅复制只会将对象的各个属性进行依次复制，并不会进行递归复制，而 JavaScript 存储对象都是存地址的，所以浅复制会导致 obj.arr 和 shallowObj.arr 指向同一块内存地址.
+因为浅复制只会将对象的各个属性进行依次复制，并不会进行递归复制，而 JavaScript 存储对象都是存地址的，所以浅复制会导致 obj.arr 和 shallowObj.arr 指向同一块内存地址.
 
-- 深复制：计算机中开辟了一块**新的内存地址**用于存放复制的对象。
+### 2.深拷贝
 
-  深复制不同，它不仅将原对象的各个属性逐个复制出去，而且将原对象各个属性所包含的对象也依次采用深复制的方法递归复制到新对象上。这就不会存在上面 obj 和 shallowObj 的 arr 属性指向同一个对象的问题。
+**计算机中开辟了一块新的内存地址用于存放复制的对象。**深复制不同，它不仅将原对象的各个属性逐个复制出去，而且将原对象各个属性所包含的对象也依次采用深复制的方法递归复制到新对象上。
 
-  ```javascript
-  var obj = { 
-      a:1, 
-      arr: [1,2]，
-      nation : '中国',
-      birthplaces:['北京','上海','广州']
-  };
-  var obj2 = {name:'杨'};
-  obj2 = deepCopy(obj,obj2);
-  console.log(obj2);
-  //深复制，要想达到深复制就需要用递归
-  function deepCopy(o,c){
-     var c = c || {}；
-     for(var i in o){
-     if(typeof o[i] === 'object'){
-            //要考虑深复制问题了
-            if(o[i].constructor === Array){
-              //这是数组
-              c[i] =[]；
-            }else{
-              //这是对象
-              c[i] = {}；
-            }
-            deepCopy(o[i],c[i])；
-          }else{
-            c[i] = o[i]；
-          }
-       }
-       return c
-   }
-  ```
+#### 数组的深拷贝
 
-#### JSON序列化与解析
+那如何深拷贝一个数组呢？这里介绍一个技巧，**不仅适用于数组还适用于对象**！那就是：
+
+```javascript
+var arr = ['old', 1, true, ['old1', 'old2'], {old: 1}]
+var new_arr = JSON.parse( JSON.stringify(arr) );
+console.log(new_arr);
+```
+
+但是， undefined 、 function 、 symbol （ES6+）和包含循环引用（对象之间相互引用，形成一个无限循环）的对象都不符合 JSON 结构标准，支持 JSON 的语言无法处理它们。
+
+#### 深拷贝的实现
+
+在拷贝的时候判断一下属性值的类型，如果是对象，我们递归调用深拷贝函数。
+
+```javascript
+var obj = { 
+    a:1, 
+    arr: [1,2]，
+    nation : '中国',
+    birthplaces:['北京','上海','广州']
+};
+//深复制，要想达到深复制就需要用递归
+var deepCopy=function (obj) {
+    if(typeof obj!=='object')
+        return;
+    var newObj=obj instanceof Array?[]:{};
+    for(var key in obj){
+        if(obj.hasOwnProperty(key)){
+            newObj[key]=typeof obj[key] === 'object'?deepCopy(obj[key]):obj[key];
+        }
+    }
+    return newObj;
+}
+```
+
+深拷贝因为使用递归，在性能上不如浅拷贝，在开发中根据实际情况进行选择。
+
+## jQuery中的extend（待看）
+
+## 数组扁平化
+
+### 1.递归
+
+循环数组元素，如果还是一个数组，就递归调用该方法.
+
+```javascript
+function flatten(arr) {
+    var result=[];
+    for(var i=0;i<arr.length;i++){
+        if(Array.isArray(arr[i])){
+            result=result.concat(flatten(arr[i]));
+        }else{
+            result.push(arr[i])
+        }
+    }
+    return result;
+}
+```
+
+### 2.toString
+
+如果数组的元素都是数字，那么可以考虑使用 toString 方法，返回了一个逗号分隔的扁平的字符串，这时候我们再 split，然后转成数字不就可以实现扁平化。
+
+```javascript
+function flatten(arr) {
+    return arr.toString().split(",").map(function (item) {
+        return +item;//+号将‘1’转数字1
+    })
+}
+```
+
+### 3.reduce
+
+reduce 为数组中的每一个元素依次执行回调函数，不包括数组中被删除或从未被赋值的元素，接受四个参数：初始值（或者上一次回调函数的返回值），当前元素值，当前索引，调用 reduce 的数组。
+
+**语法:**
+
+```javascript
+arr.reduce(callback,[initialValue])
+```
+
+- callback （执行数组中每个值的函数，包含四个参数）
+  - previousValue （上一次调用回调返回的值，或者是提供的初始值（initialValue））
+  - currentValue （数组中当前被处理的元素）
+  - index （当前元素在数组中的索引）
+  - array （调用 reduce 的数组）
+- initialValue （作为第一次调用 callback 的第一个参数。）
+
+```javascript
+function flatten(arr) {
+    return arr.reduce(function (pre,next) {
+        return pre.concat(Array.isArray(next)?flatten(next):next)
+    },[])
+}
+```
+
+### 4.ES6扩展运算符
+
+```javascript
+function flatten(arr) {
+    while (arr.some(item=>Array.isArray(item))){
+        arr=[].concat(...arr);
+    }
+    return arr;
+}
+```
+
+## JSON序列化与解析
 
 JSON是一种数据格式，可以表示简单值，对象，数组三种类型。
 
@@ -1275,7 +1402,7 @@ var jsonText=JSON.stringify(obj);
 var text=JSON.parse(jsonText)
 ```
 
-#### 正则
+## 正则
 
 https://any86.github.io/any-rule/
 
@@ -1346,7 +1473,7 @@ var patt1=new RegExp("e");
 document.write(patt1.exec("The best things in life are free"));
 ```
 
-#### DOM结构
+## DOM结构
 
 获取DOM节点：最常用的方法是`document.getElementById()`和`document.getElementsByTagName()`，以及CSS选择器`document.getElementsByClassName()`。
 

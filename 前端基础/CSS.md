@@ -618,3 +618,36 @@ CSS Hack分类：
         }
 ```
 
+#### 绘制三角形
+
+```css
+    .trangle{
+        width: 0;
+        height: 0;
+        border-top: 50px solid palevioletred;
+        border-right: 50px solid deepskyblue;
+        border-left: 50px solid palegreen;
+        border-bottom: 50px solid yellow;
+    }
+    .left {
+        width: 0;
+        height: 0;
+        border-top: 50px solid transparent;
+        border-right: 50px solid transparent;
+        border-left: 50px solid palegreen;
+        border-bottom: 50px solid transparent;
+    }
+    .top {
+        width: 0;
+        height: 0;
+        border-top: 50px solid palevioletred;
+        border-right: 50px solid transparent;
+        border-left: 50px solid transparent;
+        border-bottom: 50px solid transparent;
+    }
+```
+
+![1565358338810](C:\Users\Ying\AppData\Roaming\Typora\typora-user-images\1565358338810.png)
+
+
+

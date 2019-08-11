@@ -581,11 +581,323 @@ console.log(Foo.prototype); // undefined
 
 ## 模拟实现Symbol类型
 
+#### 关于Symbol
+
+这是ES6引入的一种新的原始数据类型Symbol，表示独一无二的值。
+
+**1. Symbol 值通过 Symbol 函数生成，使用 typeof，结果为 "symbol"**
+
+```javascript
+var s = Symbol();
+console.log(typeof s); // "symbol"
+```
+
+**2. Symbol 函数前不能使用 new 命令，否则会报错。这是因为生成的 Symbol 是一个原始类型的值，不是对象。**
+
+**3. instanceof 的结果为 false**
+
+```javascript
+var s = Symbol('foo');
+console.log(s instanceof Symbol); // false
+```
+
+**4. Symbol 函数可以接受一个字符串作为参数，表示对 Symbol 实例的描述，主要是为了在控制台显示，或者转为字符串时，比较容易区分。**
+
+```javascript
+var s1 = Symbol('foo');
+console.log(s1); // Symbol(foo)
+```
+
+**5. 如果 Symbol 的参数是一个对象，就会调用该对象的 toString 方法，将其转为字符串，然后才生成一个 Symbol 值。**
+
+```javascript
+const obj = {
+  toString() {
+    return 'abc';
+  }
+};
+const sym = Symbol(obj);
+console.log(sym); // Symbol(abc)
+```
+
+**6. Symbol 函数的参数只是表示对当前 Symbol 值的描述，相同参数的 Symbol 函数的返回值是不相等的。**
+
+```javascript
+// 没有参数的情况
+var s1 = Symbol();
+var s2 = Symbol();
+
+console.log(s1 === s2); // false
+
+// 有参数的情况
+var s1 = Symbol('foo');
+var s2 = Symbol('foo');
+
+console.log(s1 === s2); // false
+```
+
+**7. Symbol 值不能与其他类型的值进行运算，会报错。**
+
+```javascript
+var sym = Symbol('My symbol');
+
+console.log("your symbol is " + sym); // TypeError: can't convert symbol to string
+```
+
+**8. Symbol 值可以显式转为字符串，布尔值，不能转化为数字。**
+
+```javascript
+var sym = Symbol('My symbol');
+
+console.log(String(sym)); // 'Symbol(My symbol)'
+console.log(sym.toString()); // 'Symbol(My symbol)'
+```
+
+**9. Symbol 值可以作为标识符，用于对象的属性名，可以保证不会出现同名的属性。**
+
+```javascript
+var mySymbol = Symbol();
+
+// 第一种写法
+var a = {};
+a[mySymbol] = 'Hello!';
+
+// 第二种写法
+var a = {
+  [mySymbol]: 'Hello!'
+};
+
+// 第三种写法
+var a = {};
+Object.defineProperty(a, mySymbol, { value: 'Hello!' });
+
+// 以上写法都得到同样结果
+console.log(a[mySymbol]); // "Hello!"
+```
+
+**10. Symbol 作为属性名，该属性不会出现在 for...in、for...of 循环中，也不会被 Object.keys()、Object.getOwnPropertyNames()、JSON.stringify() 返回。但是，它也不是私有属性，有一个 Object.getOwnPropertySymbols 方法，可以获取指定对象的所有 Symbol 属性名。**
+
+```javascript
+var obj = {};
+var a = Symbol('a');
+var b = Symbol('b');
+
+obj[a] = 'Hello';
+obj[b] = 'World';
+
+var objectSymbols = Object.getOwnPropertySymbols(obj);
+
+console.log(objectSymbols);
+// [Symbol(a), Symbol(b)]
+```
+
+**11. 如果我们希望使用同一个 Symbol 值，可以使用 Symbol.for。它接受一个字符串作为参数，然后搜索有没有以该参数作为名称的 Symbol 值。如果有，就返回这个 Symbol 值，否则就新建并返回一个以该字符串为名称的 Symbol 值。 Symbol.for被登记在全局环境中供检索**
+
+```javascript
+var s1 = Symbol.for('foo');
+var s2 = Symbol.for('foo');
+
+console.log(s1 === s2); // true
+```
+
+**12. Symbol.keyFor 方法返回一个已登记的 Symbol 类型值的 key。**
+
+```javascript
+var s1 = Symbol.for("foo");
+console.log(Symbol.keyFor(s1)); // "foo"，因为 Symbol.for方法有登记，而Symbol方法没有登记
+
+var s2 = Symbol("foo");
+console.log(Symbol.keyFor(s2) ); // undefined
+```
+
 ## 迭代器与for of
 
-## 模拟实现Set
+所谓迭代器，其实就是一个具有 next() 方法的对象，每次调用 next() 都会返回一个结果对象，该结果对象有两个属性，value 表示当前的值，done 表示遍历是否结束。
 
-## WeakMap
+ES5创建迭代器
+
+```javascript
+function createIterator(items) {
+    var i=0;
+    return {
+        next:function () {
+            var done=i>=items.length;
+            var value=!done?items[i++]:undefined;
+            return {
+                done:done,
+                value:value
+            }
+        }
+    }
+}
+```
+
+#### for of
+
+除了迭代器之外，我们还需要一个可以遍历迭代器对象的方式，ES6 提供了 for of 语句
+
+```javascript
+var iterator = createIterator([1, 2, 3]);
+
+for (let value of iterator) {
+    console.log(value);
+}
+```
+
+结果报错 `TypeError: iterator is not iterable`，表明我们生成的 iterator 对象并不是 iterable(可遍历的)。
+
+那什么才是可遍历的呢？
+
+其实一种数据结构只要部署了 Iterator 接口，我们就称这种数据结构是“可遍历的”（iterable）。
+
+ES6 规定，默认的 Iterator 接口部署在数据结构的 Symbol.iterator 属性，或者说，一个数据结构只要具有 Symbol.iterator 属性，就可以认为是"可遍历的"（iterable）。
+
+举个例子：
+
+```javascript
+const obj = {
+    value: 1
+};
+
+for (value of obj) {
+    console.log(value);
+}
+
+// TypeError: iterator is not iterable
+```
+
+我们直接 for of 遍历一个对象，会报错，然而如果我们给该对象添加 Symbol.iterator 属性：
+
+```javascript
+const obj = {
+    value: 1
+};
+
+obj[Symbol.iterator] = function() {
+    return createIterator([1, 2, 3]);
+};
+
+for (value of obj) {
+    console.log(value);
+}
+
+// 1
+// 2
+// 3
+```
+
+由此，我们也可以发现 for of 遍历的其实是对象的 Symbol.iterator 属性。
+
+**ES6对一些数据结构默认部署了Symbol.iterator属性**
+
+for of循环可以使用的范围包括：
+
+> 1. 数组
+> 2. Set
+> 3. Map
+> 4. 类数组对象，如arguments对象，DOM NodeList对象
+> 5. Generator对象
+> 6. 字符串
+
+**for of 循环读取键名，for in循环读取键值**
+
+#### 模拟实现for of
+
+通过Symbol.iterator属性获取迭代器对象，然后用while遍历
+
+```javascript
+function forOf(obj, cb) {//迭代器对象，回调函数
+    let iterable, result;
+
+    if (typeof obj[Symbol.iterator] !== "function")
+        throw new TypeError(result + " is not iterable");
+    if (typeof cb !== "function") throw new TypeError("cb must be callable");
+
+    iterable = obj[Symbol.iterator]();
+
+    result = iterable.next();
+    while (!result.done) {
+        cb(result.value);
+        result = iterable.next();
+    }
+}
+```
+
+#### 内建迭代器
+
+为了更好的访问对象中的内容，比如有的时候我们仅需要数组中的值，但有的时候不仅需要使用值还需要使用索引，ES6 为数组、Map、Set 集合内建了以下三种迭代器：
+
+> 1. entries() 返回一个遍历器对象，用来遍历[键名, 键值]组成的数组。对于数组，键名就是索引值。
+> 2. keys() 返回一个遍历器对象，用来遍历所有的键名。
+> 3. values() 返回一个遍历器对象，用来遍历所有的键值。
+
+以数组为例：
+
+```javascript
+var colors = ["red", "green", "blue"];
+
+for (let index of colors.keys()) {
+    console.log(index);
+}
+
+// 0
+// 1
+// 2
+
+for (let color of colors.values()) {
+    console.log(color);
+}
+
+// red
+// green
+// blue
+
+for (let item of colors.entries()) {
+    console.log(item);
+}
+
+// [ 0, "red" ]
+// [ 1, "green" ]
+// [ 2, "blue" ]
+```
+
+Map 类型与数组类似，但是对于 Set 类型需要注意以下：
+
+```javascript
+var colors = new Set(["red", "green", "blue"]);
+
+for (let index of colors.keys()) {
+    console.log(index);
+}
+
+// red
+// green
+// blue
+
+for (let color of colors.values()) {
+    console.log(color);
+}
+
+// red
+// green
+// blue
+
+for (let item of colors.entries()) {
+    console.log(item);
+}
+
+// [ "red", "red" ]
+// [ "green", "green" ]
+// [ "blue", "blue" ]
+```
+
+Set 类型的 keys() 和 values() 返回的是相同的迭代器，这也意味着在 Set 这种数据结构中键名与键值相同。
+
+**而且每个集合类型都有一个默认的迭代器，在 for-of 循环中，如果没有显式指定则使用默认的迭代器。数组和 Set 集合的默认迭代器是 values() 方法，Map 集合的默认迭代器是 entries() 方法。**
+
+## Set和Map
+
+
 
 ## Promise
 
