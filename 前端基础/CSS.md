@@ -19,9 +19,54 @@ css3中的`box-sizing`属性
 - `box-sizing: content-box` 是W3C盒子模型  **默认**
 - `box-sizing: border-box` 是IE盒子模型
 
-js获取盒模型对应宽高：dom.offsetWidth/offsetHeight
+js获取盒模型对应宽高（不包括margin）：dom.offsetWidth/offsetHeight
 
-#### 块级元素与行内元素
+#### 伪类和伪元素
+
+伪类：用于向某些选择器添加特殊效果
+
+| 伪类         | 作用                           |
+| ------------ | ------------------------------ |
+| :hover       | 将样式添加到鼠标悬浮的元素     |
+| :active      | 将样式添加到被激活的元素       |
+| :focus       | 将样式添加到获得焦点的元素     |
+| :link        | 将样式添加到未被访问过的链接   |
+| :visited     | 将样式添加到被访问过的链接     |
+| :first-child | 将样式添加到元素的第一个子元素 |
+| :lang        | 定义指定的元素中使用的语言     |
+
+伪元素：用于将特殊效果添加到某些选择器
+
+| 伪元素         | 作用                     |
+| -------------- | ------------------------ |
+| ::first-letter | 将样式添加到文本的首字母 |
+| ::first-line   | 将样式添加到文本的首行   |
+| ::before       | 在某元素之前插入某些内容 |
+| ::after        | 在某元素之后插入某些内容 |
+
+伪类的效果可以通过添加一个实际的类来达到，而伪元素的效果则需要通过添加一个实际的元素才能达到
+
+**CSS3新增伪类**
+
+| 新增伪类              | 作用                                           |
+| --------------------- | ---------------------------------------------- |
+| p:first-of-type       | 选择属于其父元素的首个<p>元素的每个<p>元素     |
+| p:last-of-type        | 选择属于其父元素的最后<p>元素的每个<p>元素     |
+| p:only-of-type        | 选择属于其父元素唯一的<p>元素的每个<p>元素     |
+| p:only-child          | 选择属于其父元素唯一的子元素的每个<p>元素      |
+| p:nth-child(n)        | 选择属于其父元素的第n个子元素的每个<p>元素     |
+| p:nth-last-child(n)   | 选择属于其父元素的倒数第n个子元素的每个<p>元素 |
+| p:nth-of-type(n)      | 选择属于其父元素第n个<p>元素的每个<p>元素      |
+| p:nth-last-of-type(n) | 选择属于其父元素倒数第n个<p>元素的每个<p>元素  |
+| p:last-child          | 选择属于其父元素最后一个子元素的每个<p>元素    |
+| p:empty               | 选择没有子元素的每个<p>元素（包括文本节点）    |
+| p:target              | 选择当前活动的<p>元素                          |
+| :not(p)               | 选择非<p>元素的每个元素                        |
+| :enabled              | 控制表单控件的可用状态                         |
+| :disabled             | 控制表单控件的禁用状态                         |
+| :checked              | 单选框或复选框被选中                           |
+
+#### 级元素与行内元素
 
 1. 常见块级元素
 
@@ -186,6 +231,8 @@ float常用属性值left，right，none
 给父元素定高，父元素设置浮动
 
 #### Flex布局
+
+弹性布局适合于**移动前端开发**
 
 1. flex-direction
 
@@ -437,41 +484,35 @@ float常用属性值left，right，none
 
 #### CSS3新特性
 
-1、box-shadow（阴影效果）
+1. RGBA和opcity(透明度)
 
-2、border-color（为边框设置多种颜色）
+2. background-image（添加背景图片）
 
-3、border-image（图片边框）
+   background-clip （规定背景的绘制区域）
 
-4、text-shadow（文本阴影）
+   background-origin(content-box/padding-box/border-box) （指定背景图片的定位区域）
 
-5、text-overflow（文本截断）
+   background-size （指定背景图片尺寸）
 
-6、word-wrap（自动换行）
+3. word-wrap（对长的不可分割单词分割换行）text-break（规定文本的换行规则）text-overflow（文本截断）
 
-7、border-radius（圆角边框）
+4. 文字阴影：text-shadow： 5px 5px 5px #FF0000;（水平阴影，垂直阴影，模糊距离，阴影颜色）
 
-8、opacity（透明度）
+   盒阴影：box-shadow: 10px 10px 5px #888888
 
-9、box-sizing（控制盒模型的组成模式）
+5. box-sizing（控制盒模型的组成模式）
 
-10、resize（元素缩放）
+6. font-face属性：定义自己的字体
 
-11、outline（外边框）
+7. 圆角（边框半径）：border-radius 属性用于创建圆角
 
-12、background-size（指定背景图片尺寸）
+8. 边框图片：border-image: url(border.png) 30 30 round
 
-13、background-origin（指定背景图片从哪里开始显示）
+9. 弹性盒子
 
-14、background-clip（指定背景图片从什么位置开始裁剪）
+10. 动画
 
-15、background（为一个元素指定多个背景）
-
-16、hsl（通过色调、饱和度、亮度来指定颜色颜色值）
-
-17、hsla（在hsl的基础上增加透明度设置）
-
-18、rgba（基于rgb设置颜色，a设置透明度）
+11. 媒体查询：定义两套css，当浏览器的尺寸变化时会采用不同的属性
 
 #### CSS Hack
 
@@ -556,8 +597,35 @@ CSS Hack分类：
 | absolute | 生成绝对定位的元素，**相对于 static 定位以外的第一个父元素进行定位**。元素的位置通过 "left", "top", "right" 以及 "bottom" 属性进行规定。 |
 | fixed    | 生成绝对定位的元素，相对于浏览器窗口进行定位。元素的位置通过 "left", "top", "right" 以及 "bottom" 属性进行规定。 |
 | relative | 生成相对定位的元素，相对于其正常位置进行定位。因此，"left:20" 会向元素的 LEFT 位置添加 20 像素。 |
-| static   | 默认值。没有定位，元素出现在正常的流中（忽略 top, bottom, left, right 或者 z-index 声明）。 |
+| static   | 默认值。没有定位，元素出现在正常的文档流中（忽略 top, bottom, left, right 或者 z-index 声明）。 |
 | inherit  | 规定应该从父元素继承 position 属性的值。                     |
+
+#### display
+
+| none         | 此元素不会被显示。                                           |
+| :----------- | :----------------------------------------------------------- |
+| block        | 此元素将显示为块级元素，此元素前后会带有换行符。             |
+| inline       | 默认。此元素会被显示为内联元素，元素前后没有换行符。         |
+| inline-block | 行内块元素。（CSS2.1 新增的值）                              |
+| list-item    | 此元素会作为列表显示。                                       |
+| table        | 此元素会作为块级表格来显示（类似 <table>），表格前后带有换行符。 |
+| inherit      | 规定应该从父元素继承 display 属性的值。                      |
+
+- display:block
+
+1. block元素会独占一行，多个block元素会各自新起一行。默认情况下，block元素宽度自动填满其父元素宽度。
+2. block元素可以设置width,height属性。块级元素即使设置了宽度,仍然是独占一行。
+3. block元素可以设置margin和padding属性。
+
+- display:inline
+
+1. inline元素不会独占一行，多个相邻的行内元素会排列在同一行里，直到一行排列不下，才会新换一行，其宽度随元素的内容而变化。
+2. inline元素设置width,height属性无效。
+3. inline元素的margin和padding属性，水平方向的padding-left, padding-right, margin-left, margin-right都产生边距效果；但竖直方向的padding-top, padding-bottom, margin-top, margin-bottom不会产生边距效果。
+
+- display:inline-block
+
+1. 简单来说就是将对象呈现为inline对象，但是对象的内容作为block对象呈现。之后的内联对象会被排列在同一行内。比如我们可以给一个link（a元素）inline-block属性值，使其既具有block的宽度高度特性又具有inline的同行特性。
 
 #### 隐藏属性display,visibility,opacity
 
