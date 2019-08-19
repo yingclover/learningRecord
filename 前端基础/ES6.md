@@ -1159,18 +1159,750 @@ Promise.race([
 //[1]
 ```
 
-
-
-## Generator的自动执行
-
-## Async
-
-## 异步处理实战
-
 ## defineProperty与proxy
+
+### defineProperty
+
+ES5 提供了 Object.defineProperty 方法，该方法可以在一个对象上定义一个新属性，或者修改一个对象的现有属性，并返回这个对象。
+
+**语法**
+
+> Object.defineProperty(obj, prop, descriptor)
+>
+> obj: 要在其上定义属性的对象。
+>
+> prop:  要定义或修改的属性的名称。
+>
+> descriptor: 将被定义或修改的属性的描述符。
+
+举个例子：
+
+```javascript
+var obj = {};
+Object.defineProperty(obj, "num", {
+    value : 1,
+    writable : true,
+    enumerable : true,
+    configurable : true
+});
+//  对象 obj 拥有属性 num，值为 1
+```
+
+虽然我们可以直接添加属性和值，但是使用这种方式，我们能进行更多的配置。
+
+函数的第三个参数 descriptor 所表示的属性描述符有两种形式：**数据描述符或存取描述符**。上述例子就是数据描述符，存取描述符例子如下：
+
+```javascript
+var value = 1;
+Object.defineProperty({}, "num", {
+    get : function(){
+      return value;
+    },
+    set : function(newValue){
+      value = newValue;
+    },
+    enumerable : true,
+    configurable : true
+});
+```
+
+两者不能同时出现表示，选择其中一种。
+
+此外，所有的属性描述符都是非必须的，但是 descriptor 这个字段是必须的，如果不进行任何配置，你可以这样：
+
+```javascript
+var obj = Object.defineProperty({}, "num", {});
+console.log(obj.num); // undefined
+```
+
+之所以讲到 defineProperty，是因为我们要使用存取描述符中的 get 和 set，这两个方法又被称为 getter 和 setter。由 getter 和 setter 定义的属性称做”存取器属性“。
+
+当程序查询存取器属性的值时，JavaScript 调用 getter方法。这个方法的返回值就是属性存取表达式的值。当程序设置一个存取器属性的值时，JavaScript 调用 setter 方法，将赋值表达式右侧的值当做参数传入 setter。从某种意义上讲，这个方法负责“设置”属性值。可以忽略 setter 方法的返回值。
+
+#### watch API
+
+既然可以监控数据的改变，那我可以这样设想，即当数据改变的时候，自动进行渲染工作。举个例子：
+
+HTML 中有个 span 标签和 button 标签
+
+```html
+<span id="container">1</span>
+<button id="button">点击加 1</button>
+```
+
+当点击按钮的时候，span 标签里的值加 1。
+
+传统的做法是：
+
+```javascript
+document.getElementById('button').addEventListener("click", function(){
+    var container = document.getElementById("container");
+    container.innerHTML = Number(container.innerHTML) + 1;
+});
+```
+
+如果使用了 defineProperty：
+
+```javascript
+var obj = {
+    value: 1
+}
+
+// 储存 obj.value 的值
+var value = 1;
+
+Object.defineProperty(obj, "value", {
+    get: function() {
+        return value;
+    },
+    set: function(newValue) {
+        value = newValue;
+        document.getElementById('container').innerHTML = newValue;
+    }
+});
+
+document.getElementById('button').addEventListener("click", function() {
+    obj.value += 1;
+});
+```
+
+代码看似增多了，但是当我们需要改变 span 标签里的值的时候，直接修改 obj.value 的值就可以了。
+
+然而，现在的写法，我们还需要单独声明一个变量存储 obj.value 的值，因为如果你在 set 中直接 `obj.value = newValue` 就会陷入无限的循环中。此外，我们可能需要监控很多属性值的改变，要是一个一个写，也很累呐，所以我们简单写个 watch 函数。使用效果如下：
+
+```javascript
+var obj = {
+    value: 1
+}
+
+watch(obj, "value", function(newvalue){
+    document.getElementById('container').innerHTML = newvalue;
+})
+
+document.getElementById('button').addEventListener("click", function(){
+    obj.value += 1
+});
+```
+
+我们来写下这个 watch 函数：
+
+```javascript
+(function(){
+    function watch(obj, name, func){
+        var value = obj[name];
+        Object.defineProperty(obj, name, {
+            get: function() {
+                return value;
+            },
+            set: function(newValue) {
+                value = newValue;
+                func(value)
+            }
+        });
+        if (value) obj[name] = value
+    }
+    this.watch = watch;
+})()
+```
+
+现在我们已经可以监控对象属性值的改变，并且可以根据属性值的改变，添加回调函数
+
+### Proxy
+
+使用 defineProperty 只能重定义属性的读取（get）和设置（set）行为，到了 ES6，提供了 Proxy，可以重定义更多的行为，比如 in、delete、函数调用等更多行为。
+
+Proxy 这个词的原意是代理，用在这里表示由它来“代理”某些操作，ES6 原生提供 Proxy 构造函数，用来生成 Proxy 实例。我们来看看它的语法：
+
+```javascript
+var proxy = new Proxy(target, handler);
+```
+
+proxy 对象的所有用法，都是上面这种形式，不同的只是handler参数的写法。其中，new Proxy()表示生成一个Proxy实例，target参数表示所要拦截的目标对象，handler参数也是一个对象，用来定制拦截行为。
+
+```javascript
+var proxy = new Proxy({}, {
+    get: function(obj, prop) {
+        console.log('设置 get 操作')
+        return obj[prop];
+    },
+    set: function(obj, prop, value) {
+        console.log('设置 set 操作')
+        obj[prop] = value;
+    }
+});
+
+proxy.time = 35; // 设置 set 操作
+
+console.log(proxy.time); // 设置 get 操作 // 35
+```
+
+除了 get 和 set 之外，proxy 可以拦截多达 13 种操作，比如 has(target, propKey)，可以拦截 propKey in proxy 的操作，返回一个布尔值。
+
+```javascript
+// 使用 has 方法隐藏某些属性，不被 in 运算符发现
+var handler = {
+  has (target, key) {
+    if (key[0] === '_') {
+      return false;
+    }
+    return key in target;
+  }
+};
+var target = { _prop: 'foo', prop: 'foo' };
+var proxy = new Proxy(target, handler);
+console.log('_prop' in proxy); // false
+```
+
+又比如说 apply 方法拦截函数的调用、call 和 apply 操作。
+
+apply 方法可以接受三个参数，分别是目标对象、目标对象的上下文对象（this）和目标对象的参数数组，不过这里我们简单演示一下：
+
+```javascript
+var target = function () { return 'I am the target'; };
+var handler = {
+  apply: function () {
+    return 'I am the proxy';
+  }
+};
+
+var p = new Proxy(target, handler);
+
+p();
+// "I am the proxy"
+```
+
+又比如说 ownKeys 方法可以拦截对象自身属性的读取操作。具体来说，拦截以下操作：
+
+- Object.getOwnPropertyNames()
+- Object.getOwnPropertySymbols()
+- Object.keys()
+
+下面的例子是拦截第一个字符为下划线的属性名，不让它被 for of 遍历到。
+
+```javascript
+let target = {
+  _bar: 'foo',
+  _prop: 'bar',
+  prop: 'baz'
+};
+
+let handler = {
+  ownKeys (target) {
+    return Reflect.ownKeys(target).filter(key => key[0] !== '_');
+  }
+};
+
+let proxy = new Proxy(target, handler);
+for (let key of Object.keys(proxy)) {
+  console.log(target[key]);
+}
+// "baz"
+```
+
+#### watch API优化
+
+我们使用 proxy 再来写一下 watch 函数。使用效果如下：
+
+```javascript
+(function() {
+    function watch(target, func) {
+        var proxy = new Proxy(target, {
+            get: function(target, prop) {
+                return target[prop];
+            },
+            set: function(target, prop, value) {
+                target[prop] = value;
+                func(prop, value);
+            }
+        });
+        return proxy;//因为后面修改必须针对proxy实例，所以要返回
+    }
+    this.watch = watch;
+})()
+var obj = {
+    value: 1
+}
+var newObj = watch(obj, function(key, newvalue) {
+    if (key == 'value') document.getElementById('container').innerHTML = newvalue;
+})
+document.getElementById('button').addEventListener("click", function() {
+    newObj.value += 1
+});
+```
+
+我们也可以发现，使用 defineProperty 和 proxy 的区别，当使用 defineProperty，我们修改原来的 obj 对象就可以触发拦截，而使用 proxy，就必须修改代理对象，即 Proxy 的实例才可以触发拦截。
 
 ## 模块加载方案
 
+### AMD
+
+AMD 其实就是 RequireJS 在推广过程中对模块定义的规范化产出
+
+`requirejs` 为全局添加了 `define` 函数，你只要按照一种约定的方式书写这个模块即可。而这种约定的书写方式就是AMD，其主要内容就是定义了define函数该如何书写，只要按照这个规范书写模块和依赖，require.js就能正确的进行解析。
+
+### CMD
+
+CMD 其实就是 SeaJS 在推广过程中对模块定义的规范化产出
+
+主要内容就是描述该如何定义模块，如何引入模块，如何导出模块，只要你按照这个规范书写代码，sea.js 就能正确的进行解析。
+
+两者区别：
+
+- AMD推崇依赖前置，CMD推崇依赖就近
+
+  ```javascript
+  // require.js 例子中的 main.js
+  // 依赖必须一开始就写好
+  require(['./add', './square'], function(addModule, squareModule) {
+      console.log(addModule.add(1, 1))
+      console.log(squareModule.square(3))
+  });
+  // sea.js 例子中的 main.js
+  define(function(require, exports, module) {
+      var addModule = require('./add');
+      console.log(addModule.add(1, 1))
+  
+      // 依赖可以就近书写
+      var squareModule = require('./square');
+      console.log(squareModule.square(3))
+  });
+  ```
+
+- 对于依赖的模块，AMD是提前执行，CMD是延迟执行
+
+  ```javascript
+  // require.js
+  加载了 add 模块
+  加载了 multiply 模块
+  加载了 square 模块
+  2
+  9
+  // sea.js
+  加载了 add 模块
+  2
+  加载了 square 模块
+  加载了 multiply 模块
+  9
+  ```
+
+  AMD 是将需要使用的模块先加载完再执行代码，而 CMD 是在 require 的时候才去加载模块文件，加载完再接着执行。
+
+### CommonJS
+
+AMD 和 CMD 都是用于浏览器端的模块规范，而在服务器端比如 node，采用的则是 CommonJS 规范。
+
+跟 sea.js 的执行结果一致，也是在 require 的时候才去加载模块文件，加载完再接着执行。
+
+#### CommonJS与AMD
+
+> CommonJS 规范加载模块是同步的，也就是说，只有加载完成，才能执行后面的操作。
+
+> AMD规范则是非同步加载模块，允许指定回调函数。
+>
+> 由于 Node.js 主要用于服务器编程，模块文件一般都已经存在于本地硬盘，所以加载起来比较快，不用考虑非同步加载的方式，所以 CommonJS 规范比较适用。
+
+> 但是，如果是浏览器环境，要从服务器端加载模块，这时就必须采用异步模式，因此浏览器端一般采用 AMD 规范。
+
+### ES6模块
+
+浏览器允许脚本异步加载，下面是俩种异步加载方案的语法：
+
+```html
+<script src="path/to/myModule.js" defer></script>
+<script src="path/to/myModule.js" async></script>
+```
+
+\<script>标签打开defer或者async属性，浏览器就会异步加载，渲染引擎遇到这一行命令就会开始下载外部脚本，但不会等它下载和执行，而是直接执行后面的命令。
+
+**区别**：defer要等到整个页面正常渲染结束才会执行，async一旦下载完成渲染引擎就会中断，执行这个脚本再继续渲染，即defer是渲染完再执行，async是下载完就执行。
+
+如果有多个defer脚本，会按照在页面中出现的顺序加载，而async脚本不能保证加载顺序。
+
+
+
+> 浏览器加载 ES6 模块，也使用 `<script>` 标签，但是要加入 `type="module"` 属性。
+>
+> 通过export导出模块，import导入模块，跟 require.js 的执行结果是一致的，也就是将需要使用的模块先加载完再执行代码。
+
+#### ES6与CommonJS
+
+> 它们有两个重大差异。
+>
+> 1. CommonJS 模块输出的是一个值的拷贝，ES6 模块输出的是值的引用。
+> 2. CommonJS 模块是运行时加载，ES6 模块是编译时输出接口。
+
+第二个差异可以从两个项目的打印结果看出，导致这种差别的原因是：
+
+> 因为 CommonJS 加载的是一个对象（即module.exports属性），该对象只有在脚本运行完才会生成。而 ES6 模块不是对象，它的对外接口只是一种静态定义，在代码静态解析阶段就会生成。
+
+重点解释第一个差异。
+
+> CommonJS 模块输出的是值的拷贝，也就是说，一旦输出一个值，模块内部的变化就影响不到这个值。
+>
+> ES6 模块的运行机制与 CommonJS 不一样。JS 引擎对脚本静态分析的时候，遇到模块加载命令 import，就会生成一个只读引用。等到脚本真正执行时，再根据这个只读引用，到被加载的那个模块里面去取值。换句话说，ES6 的 import 有点像 Unix 系统的“符号连接”，原始值变了，import 加载的值也会跟着变。因此，ES6 模块是动态引用，并且不会缓存值，模块里面的变量绑定其所在的模块。
+
+Babel将ES6模块语法转为CommonJS模块语法，而浏览器不支持，会报错，需要使用打包工具将代码打包。
+
+首先为什么浏览器中不支持 CommonJS 语法呢？
+
+这是因为浏览器环境中并没有 module、 exports、 require 等环境变量。
+
+换句话说，webpack 打包后的文件之所以在浏览器中能运行，就是靠模拟了这些变量的行为。
+
 ## 装饰器
 
+修饰器是一个函数，用来修改类的行为，ES2017引入。
+
+装饰器主要用于：
+
+1. 装饰类
+2. 装饰方法或属性
+
+### 装饰类
+
+```javascript
+@annotation
+class MyClass { }
+
+function annotation(target) {
+   target.annotated = true;
+}
+MyClass.annotated//true
+//等价于
+Class A{}
+A=decorator(A)||A
+```
+
+@annotation是一个修饰器，修改了MyClass的行为，为它加上了静态属性annotation
+
+### 装饰方法或属性
+
+```javascript
+class MyClass {
+  @readonly
+  method() { }
+}
+
+function readonly(target, name, descriptor) {//目标对象，属性，属性描述
+  descriptor.writable = false;
+  return descriptor;
+}
+```
+
+如果一个方法有很多修饰器，那么该方法会先从外到内进入修饰器，然后由内向外执行。修饰器不能用于函数，因为存在函数提升
+
+应用：
+
+1.log
+
+为一个方法添加 log 函数，检查输入的参数：
+
+```javascript
+class Math {
+  @log
+  add(a, b) {
+    return a + b;
+  }
+}
+
+function log(target, name, descriptor) {
+  var oldValue = descriptor.value;
+
+  descriptor.value = function(...args) {
+    console.log(`Calling ${name} with`, args);
+    return oldValue.apply(this, args);
+  };
+
+  return descriptor;
+}
+
+const math = new Math();
+
+// Calling add with [2, 4]
+math.add(2, 4);
+```
+
 ## 私有变量的实现
+
+### 1. 约定
+
+**实现**
+
+```javascript
+class Example {
+	constructor() {
+		this._private = 'private';
+	}
+	getName() {
+		return this._private
+	}
+}
+
+var ex = new Example();
+
+console.log(ex.getName()); // private
+console.log(ex._private); // private
+```
+
+**优点**
+
+1. 写法简单
+2. 调试方便
+3. 兼容性好
+
+缺点
+
+1. 外部可以访问和修改
+2. 语言没有配合的机制，如 for in 语句会将所有属性枚举出来
+3. 命名冲突
+
+### 2. 闭包
+
+**实现一**
+
+```javascript
+/**
+ * 实现一
+ */
+class Example {
+  constructor() {
+    var _private = '';
+    _private = 'private';
+    this.getName = function() {return _private}
+  }
+}
+
+var ex = new Example();
+
+console.log(ex.getName()); // private
+console.log(ex._private); // undefined
+```
+
+**优点**
+
+1. 无命名冲突
+2. 外部无法访问和修改
+
+**缺点**
+
+1. constructor 的逻辑变得复杂。构造函数应该只做对象初始化的事情，现在为了实现私有变量，必须包含部分方法的实现，代码组织上略不清晰。
+2. 方法存在于实例，而非原型上，子类也无法使用 super 调用
+3. 构建增加一点点开销
+
+**实现二**
+
+```javascript
+/**
+ * 实现二
+ */
+const Example = (function() {
+  var _private = '';
+
+  class Example {
+    constructor() {
+      _private = 'private';
+    }
+    getName() {
+      return _private;
+    }
+  }
+
+  return Example;
+
+})();
+
+var ex = new Example();
+
+console.log(ex.getName()); // private
+console.log(ex._private); // undefined
+```
+
+**优点**
+
+1. 无命名冲突
+2. 外部无法访问和修改
+
+**缺点**
+
+1. 写法有一点复杂
+2. 构建增加一点点开销
+
+### 3. Symbol
+
+**实现**
+
+```javascript
+const Example = (function() {
+    var _private = Symbol('private');
+
+    class Example {
+        constructor() {
+          this[_private] = 'private';
+        }
+        getName() {
+          return this[_private];
+        }
+    }
+
+    return Example;
+})();
+
+var ex = new Example();
+
+console.log(ex.getName()); // private
+console.log(ex.name); // undefined
+```
+
+**优点**
+
+1. 无命名冲突
+2. 外部无法访问和修改
+3. 无性能损失
+
+**缺点**
+
+1. 写法稍微复杂
+2. 兼容性也还好
+
+### 4. WeakMap
+
+**实现**
+
+```javascript
+/**
+ * 实现一
+ */
+const _private = new WeakMap();
+
+class Example {
+  constructor() {
+    _private.set(this, 'private');
+  }
+  getName() {
+  	return _private.get(this);
+  }
+}
+
+var ex = new Example();
+
+console.log(ex.getName()); // private
+console.log(ex.name); // undefined
+```
+
+如果这样写，你可能觉得封装性不够，你也可以这样写：
+
+```javascript
+/**
+ * 实现二
+ */
+const Example = (function() {
+  var _private = new WeakMap(); // 私有成员存储容器
+
+  class Example {
+    constructor() {
+      _private.set(this, 'private');
+    }
+    getName() {
+    	return _private.get(this);
+    }
+  }
+
+  return Example;
+})();
+
+var ex = new Example();
+
+console.log(ex.getName()); // private
+console.log(ex.name); // undefined
+```
+
+**优点**
+
+1. 无命名冲突
+2. 外部无法访问和修改
+
+**缺点**
+
+1. 写法比较麻烦
+2. 兼容性有点问题
+3. 有一定性能代价
+
+### 5. 最新提案
+
+```javascript
+class Point {
+  #x;
+  #y;
+
+  constructor(x, y) {
+    this.#x = x;
+    this.#y = y;
+  }
+
+  equals(point) {
+    return this.#x === point.#x && this.#y === point.#y;
+  }
+}
+```
+
+那么为什么不直接使用 private 字段呢？比如说这样：
+
+```javascript
+class Foo {
+  private value;
+
+  equals(foo) {
+    return this.value === foo.value;
+  }
+}
+```
+
+简单点来说，就是嫌麻烦，当然也有性能上的考虑……
+
+举个例子，如果我们不使用 #，而是使用 private 关键字：
+
+```
+class Foo {
+  private value = '1';
+
+  equals(foo) {
+    return this.value === foo.value;
+  }
+}
+
+var foo1 = new Foo();
+var foo2 = new Foo();
+
+console.log(foo1.equals(foo2));
+```
+
+在这里我们新建了两个实例，然后将 foo2 作为参数传入了 foo1 的实例方法中。
+
+那么我们可以获取 foo2.value 的值吗？如果我们直接 `foo2.value` 肯定是获取不到值的，毕竟是私有变量，可是 equals 是 Foo 的一个类方法，那么可以获取到的吗？
+
+答案是可以的。
+
+其实这点在其他语言，比如说 Java 和 C++ 中也是一样的，**类的成员函数中可以访问同类型实例的私有变量**，这是因为私有是为了实现“对外”的信息隐藏，在类自己内部，没有必要禁止私有变量的访问，你也可以理解为私有变量的限制是以类为单位，而不是以对象为单位，此外这样做也可以为使用者带来便利。
+
+既然获取值是可以的，那么打印的结果应该为 true，但是如果我们传入的值不是 Foo 的实例，而是一个其他对象呢？
+
+```javascript
+var foo1 = new Foo();
+
+console.log(foo1.equals({
+  value: 2
+}));
+```
+
+当然这里代码也是可以正常运行的，但是对于编译器来说，就有一点麻烦了，因为编译器不知道 value 到底是 foo 的正常属性还是私有属性，所以编译器需要做判断，先判断 foo 是不是 Foo 的实例，然后再接着获取值。
+
+这也意味着每次属性访问都需要做这样一个判断，而引擎已经围绕属性访问做了高度优化，懒得改，而且还降低速度。
+
+不过除了这个工作之外，还会有一些其他的内容需要考虑，比如说：
+
+1. 你必须将私有的 key 编码进每个词法环境
+2. for in 可以遍历这些属性吗？
+3. 私有属性和正常属性同名的时候，谁会屏蔽谁？
+4. 怎么防止私有属性的名称不被探测出来。
+
+而如果你选择 #，实现的方式将跟 JavaScript 对象属性完全没有关系，将会使用 `private slots` 的方式以及使用一个新的 slot 查找语法，总之就是会比 private 的实现方式简单很多。
