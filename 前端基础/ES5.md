@@ -365,6 +365,168 @@ container.onclick=function(){
 //在1s之内点击container，hh不会输出，此时timer值还是1。
 ```
 
+## new调用原理
+
+### 栗子
+
+#### 1. 无 return 语句
+
+构造函数最后没有 `return` 语句，这也是使用构造函数时默认情况，最后会返回一个新对象，如下：
+
+```javascript
+function Foo(age) {
+  this.age = age;
+}
+
+var o = new Foo(111);
+console.log(o);
+```
+
+这是常见的使用构造函数创建对象的过程，打印出来的是 `{age: 111}`。
+
+#### 2. return 对象类型数据
+
+构造函数最后 `return` 对象类型数据：
+
+```javascript
+function Foo(age) {
+  this.age = age;
+
+  return { type: "我是显式返回的" };
+}
+
+var o = new Foo(222);
+console.log(o);
+```
+
+打印出来的是 `{type: '我是显式返回的'}`，也就是说，`return` 之前的工作都白做了，最后返回 `return` 后面的对象。
+
+#### 3.return 基本类型数据
+
+那是不是只要构造函数体内最后有 `return`，返回都是 `return` 后面的数据呢？
+
+我们看下返回基本类型数据的情况：
+
+```javascript
+function Foo(age) {
+  this.age = age;
+
+  return 1;
+}
+
+var o = new Foo(333);
+console.log(o);
+```
+
+打印出来的是 `{age: 333}`，和没有 `return` 时效果一样。
+
+### 原理
+
+**如果构造函数显式返回对象类型，则直接返回这个对象，而不是返回最开始创建的对象。**
+
+**如果构造函数没有显式返回对象类型（显式返回基本数据类型或者直接不返回），则返回最开始创建的对象。**
+
+PS：箭头函数中没有 `[[Construct]]` 方法，不能使用 `new` 调用，会报错。
+
+> 若执行 `new Foo()`，过程如下：
+>
+> 1）创建新对象 `o`；
+>  2）给新对象的内部属性赋值，关键是给`[[Prototype]]`属性赋值，构造原型链（如果构造函数的原型是 Object 类型，则指向构造函数的原型；不然指向 Object 对象的原型）；
+>  3）执行函数 `Foo`，执行过程中内部 `this` 指向新创建的对象 `o`；
+>  4）如果 `Foo` 内部显式返回对象类型数据，则，返回该数据，执行结束；不然返回新创建的对象 `o`。
+
+关于第二步：
+
+```javascript
+function Foo(name) {
+  this.name = name;
+}
+
+var o1 = new Foo("xiaoming");
+console.log(o1.__proto__ === Foo.prototype); // true
+
+// 重写构造函数原型属性为非对象类型，实例内部 [[Prototype]] 属性指向 Object 原型对象
+// 因为实例是一个对象类型的数据，默认会继承内建对象的原型，
+// 如果构造函数的原型不满足形成原型链的要求，那就跳过直接和内建对象原型关联
+Foo.prototype = 1;
+var o2 = new Foo("xiaohong");
+console.log(o2.__proto__ === Foo.prototype); // false
+console.log(o2.__proto__ === Object.prototype); // true
+```
+
+```javascript
+var o=new Foo()
+
+var o=new Object()
+o._proto_=Foo.prototype
+Foo.call(o)
+```
+
+### 判断是否是 Object 类型
+
+关于一个数据是否是 `Object` 类型，可以通过 `instanceof` 操作符进行判断：如果 `x instanceof Object` 返回 `true`，则 `x` 为 `Object` 类型。
+
+由上可知，`null instanceof Object` 返回 `false`，所以 `null` 不是 `Object` 类型，尽管`typeof null` 返回 "Object"。
+
+#### instanceof 原理
+
+**instanceof 的工作原理是：在表达式 x instanceof Foo 中，如果 Foo 的原型（即 Foo.prototype）出现在 x 的原型链中，则返回 true，不然，返回 false**。
+
+因为函数的原型可以被改写，所以会出现在 `x` 通过 `Foo` new 出来**之后**完全改写 `Foo` 的原型 `x instanceof Foo` 返回 `false` 的情况。因为实例创建之后重写构造函数原型，实例指向的原型已经不是构造函数的新的原型了，见下面代码：
+
+```javascript
+const Foo = function() {};
+
+const o = new Foo();
+
+o instanceof Foo; // true
+
+// 重写 Foo 原型
+Foo.prototype = {};
+o instanceof Foo; // false
+```
+
+## 遍历对象属性
+
+### for in
+
+主要用于遍历对象的可枚举属性，包括自有属性、继承自原型的属性
+
+### Object.keys
+
+返回一个数组，元素均为对象自有的可枚举属性
+
+### Object.getOwnProperty
+
+用于返回对象的自有属性，包括可枚举和不可枚举的
+
+### 栗子
+
+```javascript
+function F(name) {
+    this.name=name;
+}
+F.prototype.age=12
+var f=new F('me')
+Object.defineProperty(f,'sex',{value:1,enumerable:false})
+
+
+for(var key in f){
+    if(f.hasOwnProperty(key))
+        console.log("实例属性："+key)
+    else
+        console.log("原型属性："+key)
+}
+//实例属性：name
+// 原型属性：age
+console.log(Object.keys(f))
+// [ 'name' ]
+console.log(Object.getOwnPropertyNames(f))
+//[ 'name', 'sex' ]
+```
+
+
+
 ## 数组去重
 
 ### 1.双层循环
@@ -494,11 +656,11 @@ var unique=(a)=>[...new Set(a)]
 
 ## call和apply，bind
 
-apply：调用一个对象的一个方法，用另一个对象替换当前对象。例如：B.apply(A, arguments);即A对象应用B对象的方法。
+apply：方法调用一个函数, 其具有一个指定的this值。例如：B.apply(A, arguments);即A对象应用B方法。
 
-call：调用一个对象的一个方法，用另一个对象替换当前对象。例如：B.call(A, args1,args2);即A对象调用B对象的方法。
+call：方法调用一个函数, 其具有一个指定的this值。例如：B.call(A, args1,args2);即A对象调用B方法。
 
-bind除了返回是函数以外，它的参数和call一样。返回的函数不会马上执行
+bind：除了**返回是函数**以外，它的参数和call一样。返回的函数不会马上执行
 
 ### 原生js实现
 
@@ -1978,7 +2140,7 @@ var foo = 1;
 
 ### 作用域链
 
-当查找变量的时候，会先从当前上下文的变量对象中查找，如果没有找到，就会从父级(词法层面上的父级)执行上下文的变量对象中查找，一直找到全局上下文的变量对象，也就是全局对象。这样由多个执行上下文的变量对象构成的链表就叫做作用域链。
+**当查找变量的时候，会先从当前上下文的变量对象中查找，如果没有找到，就会从父级(词法层面上的父级)执行上下文的变量对象中查找，一直找到全局上下文的变量对象，也就是全局对象。这样由多个执行上下文的变量对象构成的链表就叫做作用域链。**
 
 ## 垃圾回收
 
