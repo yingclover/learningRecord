@@ -42,7 +42,7 @@ Child.prototype.constructor = Child;
 执行对给定对象的浅复制
 
 ```javascript
-    var person1=Object.create(Person);
+  var person1=Object.create(Person);
 //Object.create(obj)等价于下面
 function object(obj){
     function F(){}
@@ -55,7 +55,7 @@ function object(obj){
 
 ### 5.寄生式继承
 
-在原型式继承的基础上，增强对象，返回构造函数。
+在原型式继承的基础上，创建一个仅用于封装继承过程的函数，该函数在内部以某种形式来做增强对象，最后返回对象。
 
 ```javascript
 function createAnother(obj){
