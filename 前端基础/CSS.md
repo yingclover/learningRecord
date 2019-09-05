@@ -512,7 +512,9 @@ float常用属性值left，right，none
 
 10. 动画
 
-11. 媒体查询：定义两套css，当浏览器的尺寸变化时会采用不同的属性
+11. 媒体查询：定义两套css，当浏览器的尺寸变化时会采用不同的属性、
+
+12. 新布局sticky
 
 #### CSS Hack
 
@@ -599,6 +601,7 @@ CSS Hack分类：
 | relative | 生成相对定位的元素，相对于其正常位置进行定位。因此，"left:20" 会向元素的 LEFT 位置添加 20 像素。 |
 | static   | 默认值。没有定位，元素出现在正常的文档流中（忽略 top, bottom, left, right 或者 z-index 声明）。 |
 | inherit  | 规定应该从父元素继承 position 属性的值。                     |
+| sticky   | relative+fixed。该元素并不脱离文档流，仍然保留元素原本在文档流中的位置。当元素在容器中被滚动超过指定的偏移值时，元素在容器内固定在指定位置（根据top,left等值确定） |
 
 #### display
 

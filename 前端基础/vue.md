@@ -67,38 +67,30 @@ vue**双向数据流 v-model** 只作用于有value属性的元素
 
 ### 数据监听watch计算属性computed
 
-watch监听单个，computed监听多个
+**计算属性computed :** 
 
-简介：讲述数据的单个监听以及多个监听还有深度监听的不同
-watch监听单个，computed监听多个 思考业务场景： 
+1. 支持缓存，只有依赖数据发生改变，才会重新进行计算
+2. 支持异步，当computed内有异步操作时无效，无法监听数据的变化
+3. computed 属性值会默认走缓存，计算属性是基于它们的响应式依赖进行缓存的，也就是基于data中声明过的数据通过计算得到的
+4. 如果一个属性是由其他属性计算而来的，这个属性依赖其他属性，是一个多对一或者一对一，一般用computed
+5. 如果computed属性属性值是函数，那么默认会走get方法；函数的返回值就是属性的属性值；在computed中的，属性都有一个get和一个set方法，当数据变化时，调用set方法。
 
-1. 类似淘宝，当我输入某个人名字时，我想触发某个效果 
-2.  利用vue做一个简单的计算器 
+![img](https://img2018.cnblogs.com/blog/1402448/201908/1402448-20190809154932198-1444047098.png)
 
-当watch监听的是复杂数据类型（比如对象、数组）的时候需要做深度监听（写法如下）
+**侦听属性watch：**
 
-```javascript
-watch:{
-    msg:{
-        handler(val){
-            if(val.text=='love'){
-                alert(val.text)
-            }
-        },
-        deep:true//开启深度监听
-    }
-}
-```
+1. 不支持缓存，数据变，直接会触发相应的操作；
+2. watch支持异步；
+3. 监听的函数接收两个参数，第一个参数是最新的值；第二个参数是输入之前的值；
+4. 当一个属性发生变化时，需要执行对应的操作；一对多；
 
-computed 监视对象,写在了函数内部, 凡是函数内部有this.相关属性,改变都会触发当前函数
+![img](https://img2018.cnblogs.com/blog/1402448/201908/1402448-20190809160441362-1201017336.png)
 
-```javascript
-computed:{
-    result(){
-        return Number(this.num1)+Number(this.num2)
-    }
-}
-```
+监听的对象也可以写成字符串的形式
+
+![img](https://img2018.cnblogs.com/blog/1402448/201908/1402448-20190809160648619-505189772.png)
+
+当需要在数据变化时执行异步或开销较大的操作时，这个方式是最有用的。这是和computed最大的区别，请勿滥用。
 
 ### 组件化开发
 
@@ -418,6 +410,8 @@ var MyFooter={
 
  #### 哈希模式（利用hashchange 事件监听 url的hash 的改变）
 
+不会刷新页面！
+
 ```HTML
 <a href="#/login">登录</a>
 <a href="#/register">注册</a>
@@ -443,260 +437,34 @@ var MyFooter={
 
 #### history模式（使用此模式需要后台配合把接口都打到我们打包后的index.html上）
 
-哈希模式原理
+利用了 HTML5 History Interface 中新增的 `pushState()` 和 `replaceState()`方法。
 
-`window.addEventListener('hashchange', function(e) {  console.log(e) })`
+这两个方法应用于浏览器的历史记录栈，在当前已有的 `back`、`forward`、`go` 的基础之上，它们提供了对历史记录进行修改的功能。只是当它们执行修改时，虽然改变了当前的 URL，但**浏览器不会立即向后端发送请求**。
 
-核心是锚点值的改变，我们监听到锚点值改变了就去局部改变页面数据，不做跳转。跟传统开发模式url改变 后 立刻发起请求，响应整个页面，渲染整个页面比路由的跳转用户体验更好
+#### 比较
 
-1. 安装和使用路由
+history优势：
 
-   路由是以插件的形式引入到我们的vue项目中来的
+1. `pushState()` 设置的新 URL 可以是与当前 URL 同源的任意 URL；而 `hash` 只可修改 `#` 后面的部分，因此只能设置与当前 URL 同文档的 URL；
+2. `pushState()` 设置的新 URL 可以与当前 URL 一模一样，这样也会把记录添加到栈中；而 `hash` 设置的新值必须与原来不一样才会触发动作将记录添加到栈中；
+3. `pushState()` 通过 `stateObject` 参数可以添加任意类型的数据到记录中；而 `hash` 只可添加短字符串；
+4. `pushState()` 可额外设置 `title` 属性供后续使用。
 
-   vue-router是vue的核心插件
+history劣势：
 
-   - 下载`npm install vue-router`
-   - 安装插件`Vue.use(VueRouter)`
-   - 创建路由对象`var router =new VueRouter()`
-   - 配置路由规则`router.addRoutes([路由对象])`；`路由对象{path:'锚点值'，component:'要填坑显示的组件'}`
-   - 将配置好的路由对象交给Vue，在options中传递->key叫做router
-   - 留坑使用组件<router-view></router-view>
+1. `hash` 模式下，仅 `hash` 符号之前的内容会被包含在请求中，如 `http://www.abc.com`，因此对于后端来说，即使没有做到对路由的全覆盖，也不会返回 404 错误。
 
-   ```html
-    <script src="vue-router.js"></script>
-           <script>
-               var Login={
-                   template: `<div>我是登录页面</div>`
-               }
-               var Register={
-                   template: `<div>我是注册页面</div>`
-               }
-               //安装路由插件
-              Vue.use(VueRouter);
-              //创建路由对象
-               var router=new VueRouter({
-                   //配置路由
-                   routes:[
-                       {path:'/login',name:'login',component:Login}
-                   ]
-               })
-               new Vue({
-                   el:'#app',
-                   router,
-                   template: `<div>
-                                  <router-view></router-view>
-                              </div>`
-               })
-   </script>
-   ```
+2. `history` 模式下，前端的 URL 必须和实际向后端发起请求的 URL 一致，**因为怕刷新**。如 `http://www.abc.com/book/id`。如果后端缺少对 `/book/id` 的路由处理，将返回 404 错误。[Vue-Router 官网](https://link.juejin.im?target=https%3A%2F%2Frouter.vuejs.org%2Fzh-cn%2Fessentials%2Fhistory-mode.html)里如此描述：**“不过这种模式要玩好，还需要后台配置支持……所以呢，你要在服务端增加一个覆盖所有情况的候选资源：如果 URL 匹配不到任何静态资源，则应该返回同一个 index.html 页面，这个页面就是你 app 依赖的页面。”**
 
-2. 路由的跳转
+   pushState,replaceState两个方法,这两个方法接收三个参数:stateObj,title,url
 
-   路由的跳转方式
 
-   - 通过标签`<router-link to'/login'></router-link>`
-   - 通过js控制跳转this.$router.push({path:'/login'})
+路由守卫
 
-   区别：
-
-   this.$router.push() 跳转到指定的url，会向history插入新记录 
-
-   this.$router.replace() 同样是跳转到指定的url，但是这个方法不会向history里面添加新的 记录，点击返回，会跳转到上上一个页面。上一个记录是不存在的。
-    this.$router.go(-1) 常用来做返回，读history里面的记录后退一个
-
-   vue-router中的对象： `$route` 路由信息对象,只读对象 `$router` 路由操作对象,只写对象 
+5. 主要是简单介绍一下，路由守卫主要用于检验是否登录了，没登录就跳转到登录页面不让他 在其他页面停留，但是现在这种处理主要的都用请求的全局拦截(通过后台的状态码)来做了。大致了解一下路由 守卫即可
 
    ```javascript
-   new Vue({
-                   el:'#app',
-                   router,
-                   template: `<div>
-                                 <router-link to="/register">到注册</router-link>|
-                                 <router-link to="/login">到登录</router-link>
-                              <div>
-                              <button @click="goShopping">购物</button>
-                              <button @click="goBack">返回上一页</button>
-                              </div>
-                                  <router-view></router-view>
-                              </div>`,
-                   methods:{
-                       goShopping(){
-                           // this.$router.push({path:'/register',component:Register})
-                           this.$router.replace({path:'/shopping'})
-                       },
-                       goBack(){
-                           this.$router.go(-1)
-                       }
-                   }
-   })
-   ```
-
-3. 路由的传参与取参
-
-   查询参
-
-   - 配置（传参）`:to="{name:'login',query:{id:loginId}}"`
-   - 获取（取参）`this.$route.query.id`
-
-   路由参数
-
-   - 配置（传参） :to="{name:'register',params:{id:registerid} }" 
-   - 配置路由的规则 { name:'detail',path:'/detail/:id'}
-   - 获取 this.$route.params.id 
-
-   **总结**
-
-   :to传参的属性里 params是和name配对的 query和name或path都可以 
-
-   使用路由参数必须要配置路由规则里面配置好参数名，否则刷新页面参数会丢失 
-
-   js实现路由跳转传参和标签传参，路由相同而参数不同时页面不做刷新问题解决方案
-
-   ```html
-   <script>
-               var Login={
-                   template: `<div>我是登录页面<span>这是获取的参数：{{msg}}</span></div>`,
-                   data(){
-                       return {
-                           msg:''
-                       }
-                   },
-                   created(){
-                       this.msg=this.$route.query.id
-                   }
-               }
-               var Register={
-                   template: `<div>我是注册页面<span>这是获取的参数：{{foo}}</span></div>`,
-                   props: ['foo']
-                   // data() {
-                   //     return {
-                   //         registerFoo:''
-                   //     }
-                   // },
-                   // created(){
-                   //     this.registerFoo=this.$route.params.foo
-                   // }
-               }
-               //安装路由插件
-              Vue.use(VueRouter);
-              //创建路由对象
-               var router=new VueRouter({
-                   //配置路由
-                   routes:[
-                       {path:'/login',name:'login',component:Login},
-                       {path:'/register/:foo',name:'register',props:true,component: Register},
-                   ]
-               })
-               new Vue({
-                   el:'#app',
-                   router,
-                   template: `<div>
-                               <router-link :to="{name:'login',query:{id:'123'}}">到登录</router-link>|
-                               <router-link :to="{name:'register',params:{foo:'bar'}}">到注册</router-link>
-                              <router-view></router-view>
-                              </div>`,
-               })
-   </script>
-   ```
-
-   js实现路由跳转传参和标签传参，路由相同而参数不同时页面不做刷新问题解决方案：
-
-   <router-view :key="$route.fullPath"></router-view> 
-
-   ```javascript
-   template: `<div xmlns:router-view="http://www.w3.org/1999/html">
-                                              <router-link :to="{name:'login',query:{id:'123'}}">到登录</router-link>|
-                                              <router-link :to="{name:'register',params:{foo:'bar'}}">到注册</router-link>
-                                              <button @click="jsLink">js跳转</button>
-                                             <router-view :key="$route.fullPath"></router-view>
-                                       </div>`,
-   methods:{
-           jsLink(){
-                this.$router.push({name:'login',query:{id:'4556'}})
-           }
-   }
-   ```
-
-4. 嵌套路由
-
-   **案例** 进入首页下面会有导航，个人中心、首页、资讯、我的之类的
-
-   代码思想 
-
-   1:router-view的细分 router-view第一层中，包含一个router-view
-
-   2:每一个坑挖好了，要对应单独的组件 
-
-   路由配置 
-
-   ```javascript
-   routes:[{
-       path:'/nav',
-       name:'nav',
-       component:Nav,
-       //路由嵌套增加此属性
-       children:[
-           //在这里配置嵌套的路由
-       ]
-   }]
-   ```
-
-   ```html
-   <script>
-               var Nav={
-                   template:`<div>
-                               <router-view></router-view>
-                               <router-link :to="{name:'nav.index'}">首页</router-link>|
-                               <router-link :to="{name:'nav.center'}">中心</router-link>|
-                               <router-link :to="{name:'nav.info'}">资讯</router-link>
-                             </div>`
-               }
-               var Index={
-                   template:`<div>首页</div>`
-               }
-               var Center={
-                   template:`<div>中心</div>`
-               }
-               var Info={
-                   template:`<div>资讯</div>`
-               }
-               //安装路由插件
-              Vue.use(VueRouter);
-              //创建路由对象
-               var router=new VueRouter({
-                   //配置路由
-                   routes:[
-                       {
-                           path:'/nav',
-                           name:'nav',
-                           component:Nav,
-                           children:[
-                               {path:'',redirect:'/nav/index'},//重定向
-                               {path:'index',name:'nav.index',component:Index},
-                               {path:'center',name:'nav.center',component:Center},
-                               {path:'info',name:'nav.info',component:Info}
-                           ]
-                       },
-   
-                   ]
-               })
-               new Vue({
-                   el:'#app',
-                   router,
-                   template: `<div>
-                                 <router-view></router-view>
-                              </div>`,
-   
-               })
-           </script>
-   ```
-
-5. 路由守卫
-
-   主要是简单介绍一下，路由守卫主要用于检验是否登录了，没登录就跳转到登录页面不让他 在其他页面停留，但是现在这种处理主要的都用请求的全局拦截(通过后台的状态码)来做了。大致了解一下路由 守卫即可
-
-   ```javascript
-   const router = new VueRouter({ ... } 
+const router = new VueRouter({ ... } 
    //前置的钩子函数 最后要执行next（）才会跳转 
    router.beforeEach((to, from, next) => {  
        // ... 
@@ -706,9 +474,9 @@ var MyFooter={
        // ... 
    })
    ```
-
+   
    ```javascript
-   mounted(){
+mounted(){
       router.beforeEach((to,from,next)=>{
       console.log(to)
       if(to.path=='/nav.index'){
@@ -721,6 +489,41 @@ var MyFooter={
       })
    }
    ```
+
+### vue的异步更新
+
+在vue里面，如果改变一个值后立即去打印它，那么打印得到的不是更新的值，还是以前的值，因为DOM还没有更新，vue中提供nextTick()方法，可是实现实时获取新的值。
+
+![img](https://user-gold-cdn.xitu.io/2018/8/29/165821ca4d06f6c1?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+模拟实现
+
+```javascript
+// 存储nextTick
+let callbacks = [];
+let pending = false;
+
+function nextTick (cb) {
+    callbacks.push(cb);
+
+    if (!pending) {
+        // 代表等待状态的标志位
+        pending = true;
+        setTimeout(flushCallbacks, 0);
+    }
+}
+
+function flushCallbacks () {
+    pending = false;
+    const copies = callbacks.slice(0);
+    callbacks.length = 0;
+    for (let i = 0; i < copies.length; i++) {
+        copies[i]();
+    }
+}
+```
+
+
 
 ### 面试提问
 
