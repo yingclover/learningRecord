@@ -492,6 +492,10 @@ mounted(){
 
 ### vue的异步更新
 
+Vue 在更新 DOM 时是**异步**执行的。只要侦听到数据变化，Vue 将开启一个队列，并缓冲在同一事件循环中发生的所有数据变更。如果同一个 watcher 被多次触发，只会被推入到队列中一次。这种在缓冲时去除重复数据对于避免不必要的计算和 DOM 操作是非常重要的。然后，在下一个的事件循环“tick”中，Vue 刷新队列并执行实际 (已去重的) 工作。Vue 在内部对异步队列尝试使用原生的 `Promise.then`、`MutationObserver` 和 `setImmediate`，如果执行环境不支持，则会采用 `setTimeout(fn, 0)` 代替。
+
+例如，当你设置 `vm.someData = 'new value'`，该组件不会立即重新渲染。当刷新队列时，组件会在下一个事件循环“tick”中更新。多数情况我们不需要关心这个过程，但是如果你想基于更新后的 DOM 状态来做点什么，这就可能会有些棘手。虽然 Vue.js 通常鼓励开发人员使用“数据驱动”的方式思考，避免直接接触 DOM，但是有时我们必须要这么做。为了在数据变化之后等待 Vue 完成更新 DOM，可以在数据变化之后立即使用 `Vue.nextTick(callback)`。这样回调函数将在 DOM 更新完成后被调用。
+
 在vue里面，如果改变一个值后立即去打印它，那么打印得到的不是更新的值，还是以前的值，因为DOM还没有更新，vue中提供nextTick()方法，可是实现实时获取新的值。
 
 ![img](https://user-gold-cdn.xitu.io/2018/8/29/165821ca4d06f6c1?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
@@ -827,9 +831,6 @@ https://juejin.im/post/5c6cffde6fb9a049d975c8c1
 **v-on 可以绑定多个方法吗？**
 答：可以
 
-**vue中 key 值的作用？**
-答：当 Vue.js 用 v-for 正在更新已渲染过的元素列表时，它默认用“就地复用”策略。如果数据项的顺序被改变，Vue 将不会移动 DOM 元素来匹配数据项的顺序， 而是简单复用此处每个元素，并且确保它在特定索引下显示已被渲染过的每个元素。key的作用主要是为了高效的更新虚拟DOM。
-
 **什么是vue的计算属性？**
 答：在模板中放入太多的逻辑会让模板过重且难以维护，在需要对数据进行复杂处理，且可能多次使用的情况下，尽量采取计算属性的方式。好处：①使得数据处理结构清晰；②依赖于数据，数据更新，处理结果自动更新；③计算属性内部this指向vm实例；④在template调用时，直接写计算属性名即可；⑤常用的是getter方法，获取数据，也可以使用set方法改变数据；⑥相较于methods，不管依赖的数据变不变，methods都会重新计算，但是依赖数据不变的时候computed从缓存中获取，不会重新计算。
 
@@ -839,6 +840,51 @@ https://juejin.im/post/5c6cffde6fb9a049d975c8c1
 
 **怎么定义 vue-router 的动态路由? 怎么获取传过来的值**
 答：在 router 目录下的 index.js 文件中，对 path 属性加上 /:id，使用 router 对象的 params.id 获取。
+
+#### 16.vue里面的数组
+
+**Object.defineProperty局限性：**
+
+1. 在Vue中，Object.defineProperty无法监控到数组下标的变化，导致直接通过数组的下标给数组设置值，不能实时响应。 为了解决这个问题，经过vue内部处理后可以使用以下几种方法来监听数组
+
+   push()，pop()，shift()，unshift()，splice()，sort()，reverse()
+
+2. Object.defineProperty只能劫持对象的属性,因此我们需要对每个对象的每个属性进行遍历。Vue里，是通过递归以及遍历data 对象来实现对数据的监控的，如果属性值也是对象那么需要深度遍历,显然如果能劫持一个完整的对象，不管是对操作性还是性能都会有一个很大的提升。
+
+   
+
+**Vue 不能检测以下数组的变动**：
+
+1. 当你利用索引直接设置一个数组项时，例如：`vm.items[indexOfItem] = newValue`
+2. 当你修改数组的长度时，例如：`vm.items.length = newLength`
+
+为了解决第一类问题，以下两种方式都可以实现和 vm.items[indexOfItem] = newValue 相同的效果，同时也将触发状态更新：
+
+> // Vue.set
+> Vue.set(example1.items, indexOfItem, newValue)
+> // Array.prototype.splice
+> example1.items.splice(indexOfItem, 1, newValue)
+>
+> 为了解决第二类问题，你可以使用 splice：
+>
+> example1.items.splice(newLength)
+
+而要取代它的Proxy有以下两个优点;
+
+> - 可以劫持整个对象，并返回一个新对象
+> - 有13种劫持操作
+> - 可以直接监听数组的变化
+
+### vue响应式
+
+当你把一个普通的 JavaScript 对象传给 Vue 实例的 data 选项，Vue 将遍历此对象所有的属性，并使用 
+Object.defineProperty 把这些属性全部转为 getter/setter。每个组件实例都有相应的 watcher 实例对象，它会在组件渲染的过程中把属性记录为依赖，之后当依赖项的 setter 被调用时，会通知 watcher 重新计算，从而致使它关联的组件得以更新。 
+![è¿éåå¾çæè¿°](https://img-blog.csdn.net/20180102164454671?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvemlmZWl5dTEzMA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+对于已经创建的实例，Vue 不允许动态添加根级别的响应式属性。但是，可以使用 `Vue.set(object, propertyName, value)` 方法向嵌套对象添加响应式属性。
+
+**vue中 key 值的作用？**
+答：key的特殊属性主要用在 Vue 的虚拟 DOM 算法，在新旧 nodes 对比时辨识 VNodes。如果不使用 key，Vue 会使用一种最大限度减少动态元素并且尽可能的尝试修复/再利用相同类型元素的算法。使用 key，它会基于 key 的变化重新排列元素顺序，并且会移除 key 不存在的元素。如果不加`key`,那么vue会选择复用节点(Vue的就地更新策略),导致之前节点的状态被保留下来,会产生一系列的bug.
 
 ### 项目难点
 

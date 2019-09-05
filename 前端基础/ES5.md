@@ -4,26 +4,21 @@
 
 ```c++
 //先从右边找比基准小的，再从左边找比基准大的
-void quickSort(int a[],int m,int n)
-{
-        if(m<n)
-        {
-            int i=m,j=n,mark=a[m];
-            while(i<j)
-            {
-                while(a[j]>mark&&i<j)
-                    j--;
-                if(i<j)
-                    a[i++]=a[j];
-                while(a[i]<mark&&i<j)
-                    i++;
-                if(i<j)
-                    a[j--]=a[i];
-            }
-            a[i]=mark;
-            quickSort(a,m,i-1);
-            quickSort(a,i+1,n);
+void quickSort(int a[],int m,int n){
+    if(m<n){
+        int mark=a[m],i=m,j=n;
+        while(i<j){
+            while (i<j&&mark<=a[j])
+                j--;
+                a[i]=a[j];
+            while (i<j&&mark>=a[i])
+                i++;
+                a[j]=a[i];
         }
+        a[i]=mark;
+        quickSort(a,m,i-1);
+        quickSort(a,i+1,n);
+    }
 }
 ```
 
